@@ -250,7 +250,7 @@ class SubstackBot(discord.Client):
             author = article.get_author()
 
             # Remove time from full date time string.
-            published = "".join(article.published.split(" ")[:-2])
+            published = " ".join(article.published.split(" ")[:-2])
 
             article_data = {
                 "author": author.username,
