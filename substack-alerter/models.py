@@ -4,6 +4,7 @@ import feedparser
 
 from sqlalchemy import Column, Integer, Boolean, String, ForeignKey, create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
+from sqlalchemy.exc import IntegrityError
 
 from datetime import datetime, timedelta
 
@@ -13,7 +14,7 @@ from dotenv import load_dotenv
 
 
 # Export .env file.
-load_dotenv('.env')
+load_dotenv(".env")
 
 # Set up DB.
 engine = create_engine(os.getenv("DB_URI"))
@@ -22,6 +23,30 @@ Session = sessionmaker(bind=engine)
 session = Session()
 
 Base = declarative_base(bind=engine)
+
+
+class BannedUser(Base):
+    """
+    Discord user that isn't allowed to edit subscriptions.
+    """
+
+    __tablename__ = "banned_users"
+
+    id = Column(Integer, primary_key=True)
+    discord_username = Column(String, unique=True, nullable=False)
+
+    def __init__(self, discord_username, **kwargs):
+
+        super(BannedUser, self).__init__(**kwargs)
+
+        self.discord_username = str(discord_username)
+
+        try:
+            session.add(self)
+            session.commit()
+        except IntegrityError as e:
+            session.rollback()
+            raise Exception("Author is already in DB.")
 
 
 class Author(Base):
@@ -56,8 +81,12 @@ class Author(Base):
         self.username = xml_feed["copyright"]
         self.thumbnail = xml_feed["image"]["href"]
 
-        session.add(self)
-        session.commit()
+        try:
+            session.add(self)
+            session.commit()
+        except IntegrityError as e:
+            session.rollback()
+            raise Exception("Author is already in DB.")
 
     def _xml_feed(self):
         """
@@ -123,7 +152,7 @@ class Article(Base):
         Check the author can be found before saving to DB.
         """
         super(Article, self).__init__(**kwargs)
-        
+
         self.title = title
         self.url = url
         self.published = published

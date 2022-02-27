@@ -24,6 +24,10 @@ def help_message():
         name="Unsubscribe:",
         value="!unsubscribe <author>: Remove subscription to author.",
     )
+    embed.add_field(
+        name="List:",
+        value="!list: View a list of all current subscriptions.",
+    )
     embed.set_footer(text="Remember to use the subdomain e.g. subdomain.substack.com.")
     return embed
 
@@ -31,7 +35,6 @@ def help_message():
 def new_article_message(
     author=None,
     title=None,
-    author_url=None,
     article_url=None,
     thumbnail_url=None,
     published=None,
@@ -40,7 +43,7 @@ def new_article_message(
     Formatted new article message.
     """
     embed = discord.Embed(
-        title=f"{author}", description=f"[{title}]({author_url})", color=Colors.purple
+        title=f"{author}", description=f"[{title}]({article_url})", color=Colors.purple
     )
     embed.set_thumbnail(url=f"{thumbnail_url}")
     embed.set_footer(text=f"{published}")
