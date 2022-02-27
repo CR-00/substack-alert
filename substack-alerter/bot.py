@@ -4,6 +4,7 @@ import discord
 from discord.ext import tasks, commands
 
 from sqlalchemy.sql.expression import false
+from sqlalchemy.exc import IntegrityError
 
 from dotenv import load_dotenv
 
@@ -11,8 +12,8 @@ from models import Author, Article, session
 
 from embeds import help_message, new_article_message
 
-# Load OAuth credentials from .env file.
-load_dotenv()
+# Export .env file.
+load_dotenv('.env')
 
 
 class SubstackBot(discord.Client):
@@ -23,6 +24,8 @@ class SubstackBot(discord.Client):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        # Schedule Jobs.
         self.update_articles.start()
         self.post_articles.start()
 
@@ -35,7 +38,7 @@ class SubstackBot(discord.Client):
         # Post commands list.
         if command[0] == "!help":
             await message.channel.send(embed=help_message())
-
+        
         # Add subscription.
         if command[0] == "!subscribe":
             try:
@@ -46,6 +49,9 @@ class SubstackBot(discord.Client):
                     "Please enter an author to subscribe to."
                     " Alternatively, use !help for help."
                 )
+
+            except IntegrityError as e:
+                msg = f"Already subscribed to {command[1]}."
             except ValueError as e:
                 msg = e
             except Exception as e:
@@ -78,7 +84,7 @@ class SubstackBot(discord.Client):
 
             await message.channel.send(msg)
 
-    @tasks.loop(seconds=30)
+    @tasks.loop(minutes=int(os.getenv("REFRESH_INTERVAL")))
     async def update_articles(self):
         """
         Fetch new Articles for every subscribed to Author.
@@ -87,7 +93,7 @@ class SubstackBot(discord.Client):
         for author in authors:
             author.update_articles()
 
-    @tasks.loop(seconds=30)
+    @tasks.loop(minutes=int(os.getenv("POST_INTERVAL")))
     async def post_articles(self):
         """
         Post all articles with "posted" set to False, then set to True.
@@ -96,7 +102,7 @@ class SubstackBot(discord.Client):
 
         if channel is None:  # Don't do anything if not connected to channel.
             return None
-
+        
         articles = session.query(Article).filter(Article.posted == false()).all()
 
         for article in articles:
@@ -109,7 +115,7 @@ class SubstackBot(discord.Client):
                 "author_url": author.page_url(),
                 "article_url": article.url,
                 "thumbnail_url": author.thumbnail,
-                "published": article.published,
+                "published": article.published.split(" ")[:-2],
             }
 
             await channel.send(embed=new_article_message(**article_data))

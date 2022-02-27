@@ -9,9 +9,14 @@ from datetime import datetime, timedelta
 
 from dateutil import parser
 
+from dotenv import load_dotenv
+
+
+# Export .env file.
+load_dotenv('.env')
 
 # Set up DB.
-engine = create_engine(os.get_env("DBI_URI"))
+engine = create_engine(os.getenv("DB_URI"))
 
 Session = sessionmaker(bind=engine)
 session = Session()
@@ -80,7 +85,7 @@ class Author(Base):
             published_date = parser.parse(a["published"]).replace(tzinfo=None)
             posted_delta = datetime.now() - published_date
 
-            if posted_delta.days > os.getenv("OLDEST_POST_DELTA"):
+            if posted_delta.days > int(os.getenv("OLDEST_POST_DELTA")):
                 continue
 
             # Check its not in the DB already.
