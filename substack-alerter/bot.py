@@ -112,11 +112,9 @@ class SubstackBot(discord.Client):
                 # Author constructor raises ValueError if not a real author on Substack.
                 except ValueError as e:
                     msg = str(e)
-                    # User requested an author that didn't exist, set timeout.
-                    if "Unable to find author" in msg:
-                        self.console_log(
-                            f"{message.author} !subscribe {subdomain} - BAD REQUEST"
-                        )
+                    self.console_log(
+                        f"{message.author} !subscribe {subdomain} - BAD REQUEST"
+                    )
 
                 # Something went wrong.
                 except Exception as e:
@@ -189,7 +187,7 @@ class SubstackBot(discord.Client):
                     usr = BannedUser(cmd[1])
                     msg = f"Added {cmd[1]} to list of banned users."
                     self.console_log(f"{message.author}: !ban {cmd[1]} - SUCCESS")
-                except IntegrityError as e:
+                except Exception as e:
                     msg = f"{cmd[1]} is already banned."
                     self.console_log(
                         f"{message.author}: !ban {cmd[1]} - INTEGRITY ERROR"
